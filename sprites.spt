@@ -3,7 +3,7 @@
   <sprite>
     <description></description>
     <links></links>
-    <include>True</include>
+    <include>False</include>
     <multi>False</multi>
     <spbkgnd>1</spbkgnd>
     <spcolour>10</spcolour>

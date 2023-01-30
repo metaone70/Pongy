@@ -165,7 +165,7 @@ DELAY_LOOP
          LDA $C820
          BNE @WAIT10
          LDA $C821
-         CMP #2    ;Adjust this for timing
+         CMP #2                 ; ADJUSTMENT LINE FOR TIMING
          BNE @WAIT11
          RTS
 
@@ -242,37 +242,35 @@ GETK1   JSR $FF9F               ; SCAN KEYBOARD
 START_TIMER_CLOCK
         LDA     #$7F
         STA     $DD0D           ; disable all CIA2 NMIs
-        LDA     #<TICKERLSR
+        LDA     #<NMI
         STA     $318
-        LDA     #>TICKERLSR
+        LDA     #>NMI
         STA     $319
-                ; 985248 (=$F08A0) cycles per second ->
-                ; load timer A with $F08A and timer B with $10
         LDA     #$8A
         STA     $DD04
         LDA     #$F0
         STA     $DD05
         LDA     #$10
         STA     $DD06
-        LDA     #$00
+        LDA     #$0
         STA     $DD07
-        LDA     #$11
-        STA     $DD0e           ; start timer A counting cycles
-        LDA     #$51
+        LDA     #%00010001
+        STA     $DD0E           ; start timer A counting cycles
+        LDA     #%01010001
         STA     $DD0F           ; start timer B counting t.A underflows
-        LDA     #$82
+        LDA     #%10000010
         STA     $DD0D           ; enable NMI on t.B underflows
         RTS
 
-TICKERLSR       
+NMI       
         PHA
         LDA     $DD0D
         BPL     DONET           ; NMI not from CIA2
-        JSR     WRITE           ; GO AND WRITE THE COUNTER ON SCREEN
+        JSR     WRITE_COUNTER   ; GO AND WRITE THE COUNTER ON SCREEN
 DONET   PLA
         RTI
 
-WRITE
+WRITE_COUNTER
         DEC $043C               ; DECREMENT RIGHT DIGIT
         LDA $043C
         CMP #$2F                ; DID WE REACH BELOW ZERO?
@@ -283,10 +281,12 @@ WRITE
         LDA $043B               ; DID WE REACH BELOW ZERO?
         ;CMP #$2F
         CMP #$37
-        BNE WRITE               ;NO, REPEAT AND RINSE
+        BNE WRITE_COUNTER       ;NO, REPEAT AND RINSE
+
         JMP GAME_OVER           ;YES, WE ARE OUT OF TIME - GAME IS OVER
 
 EXITT   RTS
+
 
 ;GAME OVER AFTE 90 SECONDS------------------------------------------------------
 GAME_OVER
@@ -298,26 +298,28 @@ GAME_OVER
         STA $403C
 
         LDX #$00
-GOT     LDA GAMEOVERT,X      ; WRITE GAME OVER TEXT TO SCREEN
+GOT     LDA PRINT_GAME_OVER,X        ; WRITE GAME OVER TEXT TO SCREEN
         STA $05C7,X
         INX
         CPX #$0A
         BNE GOT
 
         LDA #$00
-        STA $DD04
-        STA $DD05
-        STA $DD06
-        STA $DD07
-        STA $DD0E 
+        STA $DD0E
         STA $DD0F
-        STA $DD0C
-        LDA #$7F
-        STA $DD0D  
+        LDA #%00000000
+        STA $DD0E           ; start timer A counting cycles
+        LDA #%01010000
+        STA $DD0F           ; start timer B counting t.A underflows
+        LDA #%00000000
+        STA $DD0D 
 
-        JSR WAIT_KEY
+        LDA #$47
+        STA $0318
+        LDA #$FE
+        STA $0319
 
-        JMP BEGINNING           ; JUMP TO BEGINNING
+        JMP MAINLOOP           ; JUMP TO BEGINNING
 
 ;RESET BALL WHEN PLAYER SCORES--------------------------------------------------
 RESET_BALL_POSITION
@@ -329,14 +331,14 @@ RESET_BALL_POSITION
         STA SPRITEPOS+5
         STA $D005
         LDA #%00000001
-        STA$D010
+        STA $D010
         RTS
 
 ;MAINLOOP-----------------------------------------------------------------------
 MAINLOOP
         JSR DRAW_PLAY_SCREEN
         JSR SETUP_SPRITES
-        JSR BALL_DIRECTION_AT_START
+        JSR BALL_DIRECTION_AT_START 
         JSR WAIT_KEY
         JSR START_TIMER_CLOCK
 LOOPO
@@ -348,9 +350,8 @@ LOOPO
         JSR CHECK_TOP_COLLISION
         JSR CHECK_BOTTOM_COLLISION
         JSR MOVE_BALL
-        JSR CHECK_PLAYER1_SCORES
-        JSR CHECK_PLAYER2_SCORES
-        ;JSR CHECK_TIMER_CLOCK
+        JSR UPDATE_PLAYER1_SCORE
+        JSR UPDATE_PLAYER2_SCORE
         JMP LOOPO
 --------------------------------------------------------------------------------
 
@@ -572,7 +573,7 @@ BALL_DOWN_RIGHT
         RTS
 
 ;CHECK IF PLAYER 1 SCORES-------------------------------------------------------
-CHECK_PLAYER1_SCORES
+UPDATE_PLAYER1_SCORE
         LDA $D010
         CMP #$01
         BNE SCEXIT1
@@ -595,7 +596,7 @@ DONE1   JSR SCORESOUND
         RTS
 
 ;CHECK IF PLAYER 2 SCORES-------------------------------------------------------
-CHECK_PLAYER2_SCORES
+UPDATE_PLAYER2_SCORE
         LDA $D010
         CMP #$05
         BNE SCEXIT2
@@ -778,7 +779,7 @@ PLAYER1_Y = $FB
 PLAYER2_Y = $FC
 BALL_Y = $FD
 
-GAMEOVERT       text    'game  over'
+PRINT_GAME_OVER  text    'game  over'
 
 ;SPRITE DEFINITIONS---------------------------------------------------------
 *=$2000
