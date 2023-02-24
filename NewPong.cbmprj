@@ -45,12 +45,19 @@
         <PostBuildCommands />
     </BuildEvents>
     <BuildList>
-        <FileName>newpong16.asm</FileName>
-        <FileName>newpong17.asm</FileName>
-        <FileName>newpong18.asm</FileName>
         <FileName>timer2.asm</FileName>
-        <FileName>newpong19.asm</FileName>
-        <FileName>newpong20.asm</FileName>
+        <FileName>timer4.asm</FileName>
+        <FileName>changeborder.asm</FileName>
+        <FileName>paddle.bas</FileName>
+        <FileName>pongy_1.30.asm</FileName>
+        <FileName>pongy_1.31.asm</FileName>
+        <FileName>line.asm</FileName>
+        <FileName>pongy_1.23.asm</FileName>
+        <FileName>pongy_1.24.asm</FileName>
+        <FileName>pongy_1.25.asm</FileName>
+        <FileName>pongy_1.26.asm</FileName>
+        <FileName>pongy_1.27.asm</FileName>
+        <FileName>pongy_1.30.asm</FileName>
     </BuildList>
     <DetermineBuildOrder>0</DetermineBuildOrder>
     <PaddingByte>0</PaddingByte>
@@ -72,6 +79,17 @@
             <FileOpen>False</FileOpen>
         </SourceFile>
         <SourceFile>
+            <Name>datafill.sdd</Name>
+            <PrgName />
+            <FileType>9</FileType>
+            <IncludeInBuild>True</IncludeInBuild>
+            <Regions />
+            <Breakpoints />
+            <Bookmarks />
+            <Topmost>False</Topmost>
+            <FileOpen>False</FileOpen>
+        </SourceFile>
+        <SourceFile>
             <Name>newpong_playscreen.sdd</Name>
             <PrgName />
             <FileType>9</FileType>
@@ -83,7 +101,7 @@
             <FileOpen>False</FileOpen>
         </SourceFile>
         <SourceFile>
-            <Name>newpong16.asm</Name>
+            <Name>pongy_1.23.asm</Name>
             <PrgName />
             <FileType>2</FileType>
             <IncludeInBuild>True</IncludeInBuild>
@@ -94,7 +112,7 @@
             <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
-            <Name>newpong17.asm</Name>
+            <Name>pongy_1.24.asm</Name>
             <PrgName />
             <FileType>2</FileType>
             <IncludeInBuild>True</IncludeInBuild>
@@ -105,7 +123,7 @@
             <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
-            <Name>newpong18.asm</Name>
+            <Name>pongy_1.25.asm</Name>
             <PrgName />
             <FileType>2</FileType>
             <IncludeInBuild>True</IncludeInBuild>
@@ -116,7 +134,7 @@
             <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
-            <Name>newpong19.asm</Name>
+            <Name>pongy_1.26.asm</Name>
             <PrgName />
             <FileType>2</FileType>
             <IncludeInBuild>True</IncludeInBuild>
@@ -127,7 +145,18 @@
             <FileOpen>True</FileOpen>
         </SourceFile>
         <SourceFile>
-            <Name>newpong20.asm</Name>
+            <Name>pongy_1.27.asm</Name>
+            <PrgName />
+            <FileType>2</FileType>
+            <IncludeInBuild>True</IncludeInBuild>
+            <Regions />
+            <Breakpoints />
+            <Bookmarks />
+            <Topmost>False</Topmost>
+            <FileOpen>True</FileOpen>
+        </SourceFile>
+        <SourceFile>
+            <Name>pongy_1.30.asm</Name>
             <PrgName />
             <FileType>2</FileType>
             <IncludeInBuild>True</IncludeInBuild>
@@ -160,15 +189,37 @@
             <FileOpen>False</FileOpen>
         </SourceFile>
         <SourceFile>
-            <Name>timer2.asm</Name>
+            <Name>zx2.cst</Name>
             <PrgName />
-            <FileType>2</FileType>
+            <FileType>6</FileType>
             <IncludeInBuild>True</IncludeInBuild>
             <Regions />
             <Breakpoints />
             <Bookmarks />
             <Topmost>False</Topmost>
-            <FileOpen>True</FileOpen>
+            <FileOpen>False</FileOpen>
+        </SourceFile>
+        <SourceFile>
+            <Name>ZX3.cst</Name>
+            <PrgName />
+            <FileType>6</FileType>
+            <IncludeInBuild>True</IncludeInBuild>
+            <Regions />
+            <Breakpoints />
+            <Bookmarks />
+            <Topmost>False</Topmost>
+            <FileOpen>False</FileOpen>
+        </SourceFile>
+        <SourceFile>
+            <Name>zx4.cst</Name>
+            <PrgName />
+            <FileType>6</FileType>
+            <IncludeInBuild>True</IncludeInBuild>
+            <Regions />
+            <Breakpoints />
+            <Bookmarks />
+            <Topmost>False</Topmost>
+            <FileOpen>False</FileOpen>
         </SourceFile>
     </SourceFiles>
 </Project>
