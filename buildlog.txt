@@ -1,0 +1,29 @@
+Output dir: E:\01Commodore64\Projects\VisualStudioCode
+parsing
+flex pass 1
+flex pass 2
+Output pass
+Writing prg file: pongy_1.30.prg
+
+Memory Map
+----------
+Default-segment:
+  $0801-$080c basic program
+  $0820-$14c0 Unnamed
+  $2000-$21bf Unnamed
+  $2200-$2ee9 Unnamed
+  $3800-$47ff Unnamed
+  $4800-$4be7 Unnamed
+  $4c00-$4fe7 Unnamed
+  $6000-$8710 Unnamed
+
+Got 0 errors and 22 warnings while executing:
+  (E:\01Commodore64\Projects\VisualStudioCode\pongy_1.30.asm 250:9) Warning: Using absolute mode for zeropage argument. Try defining involved labels before this statement.
+  (E:\01Commodore64\Projects\VisualStudioCode\pongy_1.30.asm 298:9) Warning: Using absolute mode for zeropage argument. Try defining involved labels before this statement.
+  (E:\01Commodore64\Projects\VisualStudioCode\pongy_1.30.asm 332:9) Warning: Using absolute mode for zeropage argument. Try defining involved labels before this statement.
+  (E:\01Commodore64\Projects\VisualStudioCode\pongy_1.30.asm 425:9) Warning: Using absolute mode for zeropage argument. Try defining involved labels before this statement.
+  (E:\01Commodore64\Projects\VisualStudioCode\pongy_1.30.asm 427:9) Warning: Using absolute mode for zeropage argument. Try defining involved labels before this statement.
+  ...
+
+Writing Vice symbol file: pongy_1.30.vs
+Writing Symbol file: pongy_1.30.sym

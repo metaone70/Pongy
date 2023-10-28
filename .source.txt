@@ -46,10 +46,10 @@ intro:
         sta $d011
         lda #$18
         sta $d016
-        lda #$78        //% 0111 1000
-        sta $d018       //% xxxx 1xxx bitmap is at $2000, 
-        lda #$c6        //% 1100 0110 
-        sta $dd00       //% xxxx 10xx bank1: $4000-$7fff
+        lda #$78
+        sta $d018
+        lda #$c6
+        sta $dd00
         lda #$00                                 // black border
         sta $d020
         lda $8710
@@ -87,10 +87,10 @@ intro:
         sta $d011
         lda #$c8
         sta $d016                
-        lda #$1f                //screen mem is at $0400, 
-        sta $d018               //%0001 1111
-        lda #$17                
-        sta $dd00               //%00010111
+        lda #$1f 
+        sta $d018
+        lda #$17
+        sta $dd00         
 
         jsr stop_music
         jmp mainloop
@@ -319,8 +319,8 @@ wait30: inc $f7
 not15fs:lda #$00               // delay routine
         sta $f7
         sta $f8
-wait33: inc $f8
-wait32: inc $f7
+wait33:  inc $f8
+wait32:  inc $f7
         lda $f7
         cmp #$fd
         bne wait32

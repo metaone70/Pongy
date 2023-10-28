@@ -1,0 +1,22 @@
+Output dir: E:\01Commodore64\Projects\Kickassembler\pongy\bin
+parsing
+flex pass 1
+flex pass 2
+Output pass
+Writing prg file: E:\01Commodore64\Projects\Kickassembler\pongy\bin\pongy_1.32.3.kick.prg
+
+Memory Map
+----------
+Default-segment:
+  $0801-$080c basic upstart
+  $0820-$12e3 main program
+  $1d00-$1fff angle arrays
+  $2000-$21bf sprite definitions
+  $2200-$2ee9 music file
+  $3800-$47ff font file
+  $4800-$4be7 screen data
+  $4c00-$4fe7 screen color data
+  $6000-$8710 bitmap koala image
+
+Writing Vice symbol file: E:\01Commodore64\Projects\Kickassembler\pongy\bin\pongy_1.32.3.kick.vs
+Writing Symbol file: pongy_1.32.3.kick.sym

@@ -1,5 +1,6 @@
-//pongy! v1.30 (c) metesev 2023
+//pongy! v1.31 (c) metesev 2023
 //written between 20jan23-24feb23
+//converted from C64PrgStudio to Kick Assembler
 
 //memory map of the game
 //$0801 - $0810   program start
@@ -16,6 +17,8 @@
 //added joystick option
 //added serving option (after a goal, the ball starts from either player positions, which is pseudo random)
 //added 2 more angles -> upper part 45, middle 15, bottom 30 degrees... 45 is the fastest
+
+// this version includes IRQ driven color scheme for the playground
 
 .label current_arraylo = $fd        // current anglennn address
 .label current_arrayhi = $fe        // current anglennn address
@@ -46,10 +49,10 @@ intro:
         sta $d011
         lda #$18
         sta $d016
-        lda #$78        //% 0111 1000
-        sta $d018       //% xxxx 1xxx bitmap is at $2000, 
-        lda #$c6        //% 1100 0110 
-        sta $dd00       //% xxxx 10xx bank1: $4000-$7fff
+        lda #$78
+        sta $d018
+        lda #$c6
+        sta $dd00
         lda #$00                                 // black border
         sta $d020
         lda $8710
@@ -87,10 +90,10 @@ intro:
         sta $d011
         lda #$c8
         sta $d016                
-        lda #$1f                //screen mem is at $0400, 
-        sta $d018               //%0001 1111
-        lda #$17                
-        sta $dd00               //%00010111
+        lda #$1f 
+        sta $d018
+        lda #$17
+        sta $dd00         
 
         jsr stop_music
         jmp mainloop
@@ -128,6 +131,51 @@ innerloopy:
         inx
         cpx #$04
         bne looptext
+        
+        sei
+        lda #$0
+        sta $d020
+        lda #$00
+        sta $d021
+
+        lda #%01111111
+        sta $dc0d
+        and $d011
+        sta $d011
+        lda $d0cd
+        lda $dd0d
+        lda #$48
+        sta $d012       
+        lda #<irqcol
+        sta $0314
+        lda #>irqcol
+        sta $0315
+        lda #%00000001
+        sta $d01a
+        cli
+        rts
+
+irqcol:
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        lda #$0b
+        sta $d020
+        sta $d021
+        lda #$ed 
+!loop:  cmp $d012
+        bne !loop-
+        lda #$0
+        sta $d020
+        sta $d021
+        asl $d019
+        jmp $ea31               
         rts
 
 //setup sprites-----------------------------------------------------------------
@@ -251,37 +299,26 @@ yel:    lda #$07                // draw the yellow lines
         bne yel
 
 faster:
-        lda current_arrayhi
+        lda current_arrayhi   
         cmp #$13
-        bne not15f
-        lda #$00               // faster delay routine for 15 degrees
-        sta $f7
-        sta $f8
-wait21: inc $f8
-wait20: inc $f7
-        lda $f7
-        cmp #$cd
-        bne wait20
-        lda $f8
-        cmp #1                 // adjustment line for timing
-        bne wait21
-        lda $043b
+        bne not15f                
+        ldy #$00
+        ldx #$6f   
+!loop:  dex
+        bne !loop-
+        iny 
+        cpy #$01
+        bne !loop-
         rts
 
-not15f:
-        lda #$00               // delay routine for standard speed
-        sta $f7
-        sta $f8
-wait23: inc $f8
-wait22: inc $f7
-        lda $f7
-        cmp #$20
-        bne wait22
-        lda $f8
-        cmp #2                 // adjustment line for timing
-        bne wait23
-        lda $043b
-        rts
+not15f: ldy #$00
+        ldx #$df   
+!loop:  dex
+        bne !loop-
+        iny 
+        cpy #$01
+        bne !loop-
+        rts 
 
 // ------------------------------> this delay is for fastest speed 
                                  // speed for the last 9 seconds
@@ -299,68 +336,51 @@ redd:   lda #$02                // draw the red line
         bne redd
 
 fastest:
-        lda current_arrayhi
+        lda current_arrayhi   
         cmp #$13
-        bne not15fs
-        lda #$00               // delay routine
-        sta $f7
-        sta $f8
-wait31: inc $f8
-wait30: inc $f7
-        lda $f7
-        cmp #$a0
-        bne wait30
-        lda $f8
-        cmp #1                 // adjustment line for timing
-        bne wait31
-        inc $d020       
+        bne not15fs                
+        ldy #$00
+        ldx #$2f   
+!loop:  dex
+        bne !loop-
+        iny 
+        cpy #$01
+        bne !loop-
         rts
 
-not15fs:lda #$00               // delay routine
-        sta $f7
-        sta $f8
-wait33: inc $f8
-wait32: inc $f7
-        lda $f7
-        cmp #$fd
-        bne wait32
-        lda $f8
-        cmp #1                 // adjustment line for timing
-        bne wait33
-        inc $d020       
-        rts
+not15fs:ldy #$00
+        ldx #$af   
+!loop:  dex
+        bne !loop-
+        iny 
+        cpy #$01
+        bne !loop-
+        rts 
 
 // -----------------------------> this delay is for normal speed
                                 // between 90-60 seconds            
 delay_normal:                
-        lda current_arrayhi     // check if it is 15 degrees
+        lda current_arrayhi   
         cmp #$13
-        bne not15               // if not, move to the standard speed routine
-        lda #$00                // this is the same with standard but a little 
-        sta $f7                 // faster
-        sta $f8
-wait35: inc $f8
-wait34: inc $f7
-        lda $f7
-        cmp #$10
-        bne wait34
-        lda $f8
-        cmp #2                 // adjustment line for timing
-        bne wait35
+        bne not15               
+        ldy #$00
+        ldx #$3f   
+!loop:  dex
+        bne !loop-
+        iny 
+        cpy #$02
+        bne !loop-
         rts
 
-not15:  lda #$00                // not 15 degrees, so delay in standard speed
-        sta $f7
-        sta $f8
-wait37: inc $f8
-wait36: inc $f7
-        lda $f7
-        cmp #$70
-        bne wait36
-        lda $f8
-        cmp #2                 // adjustment line for timing
-        bne wait37
-        rts
+not15:  ldy #$00
+        ldx #$af   
+!loop:  dex
+        bne !loop-
+        iny 
+        cpy #$02
+        bne !loop-
+        rts 
+
 
 //expand sprite msb--------------------------------------------------------------
 placesprites:
@@ -561,6 +581,7 @@ game_over:
         sta $dd0e
         sta $dd0f
         sta $d020
+        sta $d021 
 
         lda #%00000000
         sta $d015               // disable all sprites
@@ -956,7 +977,7 @@ flb1:   sty $d02a
         cpy #$ff
         bne flb1
         inx
-        cpx #$ff
+        cpx #$d0 
         bne flb2
 
         lda #$00                // make the border black again
@@ -1011,7 +1032,7 @@ flr1:   sty $d02a
         cpy #$ff
         bne flr1
         inx
-        cpx #$ff
+        cpx #$d0 
         bne flr2
 
         lda #$00                // make the border black again
@@ -1393,7 +1414,7 @@ angle15y:
 
 // new font file--------------------------------------------------------------       
 *=$3800                          
-.import binary "zx4.bin"
+.import binary "zx5.bin"
 
 // play screen--------------------------------------------------------------    
 //screen data

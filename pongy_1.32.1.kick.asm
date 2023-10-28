@@ -21,10 +21,10 @@
 .label current_arrayhi = $fe        // current anglennn address
 .label angle_pointer   = $fc
 
-*=$0801 "basic program"
+*=$0801 "basic upstart"
 BasicUpstart($0820)
 
-*=$0820
+*=$0820 "main program"
 beginning:
         sei
         lda #$20              //when restore key is hit
@@ -252,7 +252,7 @@ yel:    lda #$07                // draw the yellow lines
 
 faster:
         lda current_arrayhi
-        cmp #$13
+        cmp #$1f
         bne not15f
         lda #$00               // faster delay routine for 15 degrees
         sta $f7
@@ -300,7 +300,7 @@ redd:   lda #$02                // draw the red line
 
 fastest:
         lda current_arrayhi
-        cmp #$13
+        cmp #$1f 
         bne not15fs
         lda #$00               // delay routine
         sta $f7
@@ -319,8 +319,8 @@ wait30: inc $f7
 not15fs:lda #$00               // delay routine
         sta $f7
         sta $f8
-wait33: inc $f8
-wait32: inc $f7
+wait33:  inc $f8
+wait32:  inc $f7
         lda $f7
         cmp #$fd
         bne wait32
@@ -334,7 +334,7 @@ wait32: inc $f7
                                 // between 90-60 seconds            
 delay_normal:                
         lda current_arrayhi     // check if it is 15 degrees
-        cmp #$13
+        cmp #$1f 
         bne not15               // if not, move to the standard speed routine
         lda #$00                // this is the same with standard but a little 
         sta $f7                 // faster
@@ -577,9 +577,9 @@ got1:   lda print_game_over,x
 
         ldx #$00
 got2:   lda start_game_message1,x
-        sta $06b2,x
+        sta $06b0,x
         inx
-        cpx #$14
+        cpx #$17
         bne got2
 
         ldx #$00
@@ -683,7 +683,7 @@ mainloop:
         jsr draw_play_screen            // draws the pre-drawn text screen
         jsr setup_sprites               // sets up the sprites
         jsr ball_direction_at_start     // get the randomized direction
-        jsr select_control              // select paddle or joystick
+        jsr select_preferences          // select number of players and controllers
         jsr wait_button                 // wait for a paddle button to be pressed
         jsr start_timer_clock           // start the countdown clock
 
@@ -708,8 +708,8 @@ check_controls_p1:
         beq pedal1              // go to pedal controls                      
         jmp j1p1                // otherwise go to joystick control
 
-pedal1: lda #%11000000          // select pins 6-7 for ($c0=192)
-        sta $dc02               // data port b  ->disable keyboard?
+pedal1: //lda #%11000000          // select pins 6-7 for ($c0=192)
+        //sta $dc02               // data port b  ->disable keyboard?
         lda $dc00               // control-port 1 selected (when bit6=1 and bit7=0)
         and #%00111111          // clear bit-6/7        
         ora #%01000000          // set bit-6
@@ -736,12 +736,17 @@ setup2: stx spritepos+1
 
 // check for player 2 paddle in port 1-------------------------------------------
 check_controls_p2:
-        lda selection
+        lda noofplayers
+        cmp #$01
+        bne !+
+        jmp computer_plays
+
+!:      lda selection
         cmp #$00
         beq pedal2
         jmp j2p2
-pedal2: lda #%11000000          // select pins 6-7 for 
-        sta $dc02               // data port b  ->disable keyboard?
+pedal2: //lda #%11000000          // select pins 6-7 for 
+        //sta $dc02               // data port b  ->disable keyboard?
         lda $dc00               // control-port 1 selected (when bit6=1 and bit7=0)
         and #%00111111          // clear bit-6/7        
         ora #%01000000          // set bit-6
@@ -1187,14 +1192,62 @@ stop_music:
         rts
 
 // make paddle or joystick selection---------------------------------------------
-select_control:
-        jsr $ff9f
+select_preferences:
+
+        ldx #$00
+ptex:   lda player_number_text,x
+        sta $056e,x
+        inx
+        cpx #$18
+        bne ptex   
+
+        lda #$00
+        sta controlkey1
+        sta controlkey2
+
+select_opponent:
         jsr $ffe4              // waits for key press
-        sta controlkey
+        beq select_opponent
+        sta controlkey1
+        lda controlkey1
+        cmp #49                // compares it to '1'
+        beq oneplayer    
+        cmp #50                // compares it to '2'
+        beq twoplayer
+        jmp select_opponent      
+
+oneplayer:
+        lda #$01
+        sta noofplayers
+        lda #49
+        sta $0588
+        jmp !+
+
+twoplayer:
+        lda #$02
+        sta noofplayers
+        lda #50
+        sta $0588
+
+!: 
+        ldx #$00
+ctex:   lda controller_text,x
+        sta $05ba,x
+        inx
+        cpx #$21
+        bne ctex   
+
+        lda #$00
+        sta controlkey1
+
+select_control:
+        jsr $ffe4              // waits for key press
         beq select_control
-        cmp #74                // compares it to 'j' ($4a)
+        sta controlkey2       
+        lda controlkey2
+        cmp #74                // compares it to 'j'
         beq joystick    
-        cmp #80                // compares it to 'p' ($50) 
+        cmp #80                // compares it to 'p'
         beq paddle
         jmp select_control
 
@@ -1203,7 +1256,7 @@ joystick:
         sta selection
         ldx #$00
 jtext:  lda joystick_selected,x
-        sta $0663,x
+        sta $0613,x
         inx
         cpx #$11
         bne jtext
@@ -1214,7 +1267,7 @@ paddle:
         sta selection           
         ldx #$00
 pdtext: lda paddle_selected,x
-        sta $0663,x
+        sta $0613,x
         inx
         cpx #$11
         bne pdtext
@@ -1222,16 +1275,20 @@ pdtext: lda paddle_selected,x
 write_button_text:
         ldx #$00
 wbt:    lda press_a_button,x
-        sta $06af,x
+        sta $06aa,x
         inx
-        cpx #$1a
+        cpx #$23
         bne wbt
+ 
+        lda #$00
+        sta controlkey2
+
         jmp wait_button
 
 // joystick control routine for player 1-----------------------------------------
-j1p1:   lda #$ff
-        sta $dc00
-        sta $dc02
+j1p1:   //lda #$ff
+        //sta $dc00
+        //sta $dc02
         lda #$01                // check joystick port 1 for player 1
         bit $dc01
         bne joy
@@ -1251,9 +1308,9 @@ jexit1: rts
 
 
 // if joystick selected, check player control 2----------------------------------
-j2p2:   lda #$7f
-        sta $dc00
-        sta $dc02
+j2p2:   //lda #$7f
+        //sta $dc00
+        //sta $dc02
         lda #$01
         bit $dc00
         bne joy2
@@ -1271,6 +1328,61 @@ joy2:   lda #$02
         jmp p2j
 jexit2: rts
 
+// computer player routine--------------------------------------------------------
+computer_plays:
+        lda balldirection
+        cmp #$01
+        beq move_computer_ball
+        cmp #$02
+        beq move_computer_ball
+        jmp end_computer_move
+
+move_computer_ball:
+        lda spritepos+4
+        cmp #$bc 
+        bcs end_computer_move
+
+        // lda spritepos+3                 // player2 y coordinate
+        // sec                             // subtracted from        
+        // sbc spritepos+5                 // ball y coordinate        
+        // sta result
+
+        ldx spritepos+3
+        cpx spritepos+5
+        bmi move_computer_down          // result is minus, player is higher than ball
+        bne move_computer_up            // result is positive, ball is higher than player
+        jmp end_computer_move           // they are equal, no move
+
+move_computer_up:
+        lda spritepos+3                 // subtract ball y position
+        sec                             // from player2 y position 
+        sbc spritepos+5
+        sta result
+ 
+        lda result                      // check the difference 
+        cmp #$14                        // against 20 pixels
+        bcc end_computer_move           // is less than 20, no need to move
+
+        dec spritepos+3                 // otherwise move player2 up
+        dec spritepos+3
+        jmp end_computer_move
+
+move_computer_down:
+        lda spritepos+5                 // subtract ball y position
+        sec                             // from player2 y position 
+        sbc spritepos+3
+        sta result
+ 
+        lda result                      // check the difference 
+        cmp #$14                        // against 20 pixels
+        bcc end_computer_move           // is less than 20, no need to move
+
+        inc spritepos+3                 // otherwise move player2 up
+        inc spritepos+3
+        jmp end_computer_move
+        
+end_computer_move:
+        rts 
 
 //-------variables--------------------------------------------------------
 
@@ -1281,14 +1393,17 @@ postable: .byte $37,$85,$1f,$85,$aa,$8d,$40,$85,$7f,$85,$bf,$85,$ff,$85   // spr
 .label coldata=$8328                         // bitmap title color data - $8328     
 .label scrram=$5c00                          // bitmap title screen location - $5c00
 .label colram=$d800                          // bitmap title color location - $d800 
-tempbuffer:      .byte 0
-key:             .byte 0                      // get char. of key pressed
-controlkey:      .byte 0                      // paddle or joystick selection variable
-selection:       .byte 0                      // 0=paddle, 1=joystick
-music:           .byte 0
+tempbuffer:     .byte 0
+key:            .byte 0                      // get char. of key pressed
+controlkey1:    .byte 0                      // number of player selection variable
+controlkey2:    .byte 0                      // paddle or joystick selection variable
+selection:      .byte 0                      // 0=paddle, 1=joystick
+music:          .byte 0
 
-delta:           .byte $00
-addsub:          .byte $00     // temporarily write the value of table
+delta:          .byte $00
+addsub:         .byte $00     // temporarily write the value of table
+noofplayers:    .byte $00
+result:         .byte $00 
 
 print_game_over:        .text "game  over"
 player_1_wins:          .text "player 1 wins !"
@@ -1296,9 +1411,10 @@ player_2_wins:          .text "player 2 wins !"
 draw_message:           .text "it is a draw ! "
 joystick_selected:      .text "joystick selected"
 paddle_selected:        .text " paddle selected "
-press_a_button:         .text "press a button to continue"
-
-start_game_message1:    .text "   press a button   "
+press_a_button:         .text "press controller button to continue"
+player_number_text:     .text "number of players? (1/2)"
+controller_text:        .text "controller ? (j)oystick/(p)addles"
+start_game_message1:    .text "press controller button"
 start_game_message2:    .text "   to start over    "
 
 //color wash table---------------------------------------------------------------
@@ -1314,7 +1430,7 @@ color:       .byte $09,$09,$02,$02,$08
              .byte $00,$00,$00,$00,$00
 //-------------------------------------------------------------------------------
 //angle y inc/dec tables
-
+*=$1d00 "angle arrays"
 angle45y:
         .byte    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
         .byte    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
@@ -1344,7 +1460,7 @@ angle15y:
 
 
 //sprite definitions---------------------------------------------------------
-*=$2000
+*=$2000 "sprite definitions"
 //sprite 0 data // player 1 - right player --> pointer $80
  .byte $00,$00,$00,$00,$00,$3a,$00,$00,$3a,$00,$00,$3a,$00,$00,$3a,$00
  .byte $00,$2a,$00,$00,$2a,$00,$00,$2a,$00,$00,$2a,$00,$00,$2a,$00,$00
@@ -1388,69 +1504,21 @@ angle15y:
  .byte $f0,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$c0
 
 // music file----------------------------------------------------------------
-*=$2200
+*=$2200 "music file"
 .import binary "donence.bin",2
 
 // new font file--------------------------------------------------------------       
-*=$3800                          
-.import binary "zx4.bin"
+*=$3800 "font file"             
+.import binary "zx5.bin"
 
 // play screen--------------------------------------------------------------    
 //screen data
-*=$4800
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$13,$03,$0f,$12,$05,$20,$20,$20,$14,$09,$0d,$05,$20,$20,$20,$13,$03,$0f,$12,$05,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $10,$0c,$01,$19,$05,$12,$20,$32,$20,$20,$20,$20,$20,$30,$30,$20,$20,$20,$20,$39,$30,$20,$20,$20,$20,$30,$30,$20,$20,$20,$20,$20,$10,$0c,$01,$19,$05,$12,$20,$31
-        .byte    $79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79,$79
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$17,$05,$0c,$03,$0f,$0d,$05,$20,$14,$0f,$20,$6d,$6e,$6f,$70,$71,$72,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$10,$0c,$05,$01,$13,$05,$20,$03,$0f,$0e,$0e,$05,$03,$14,$20,$19,$0f,$15,$12,$20,$03,$0f,$0e,$14,$12,$0f,$0c,$0c,$05,$12,$13,$3a,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$10,$01,$04,$04,$0c,$05,$20,$13,$05,$14,$20,$2d,$3e,$20,$10,$0f,$12,$14,$20,$31,$20,$0f,$12,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$0a,$0f,$19,$13,$14,$09,$03,$0b,$13,$20,$20,$2d,$3e,$20,$10,$0f,$12,$14,$20,$31,$20,$26,$20,$32,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$10,$0c,$05,$01,$13,$05,$20,$0d,$01,$0b,$05,$20,$19,$0f,$15,$12,$20,$13,$05,$0c,$05,$03,$14,$09,$0f,$0e,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$28,$10,$29,$20,$10,$01,$04,$04,$0c,$05,$20,$20,$20,$20,$28,$0a,$29,$20,$0a,$0f,$19,$13,$14,$09,$03,$0b,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$02,$05,$17,$01,$12,$05,$21,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$14,$08,$05,$20,$13,$10,$05,$05,$04,$20,$17,$09,$0c,$0c,$20,$07,$05,$14,$20,$06,$01,$13,$14,$05,$12,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$01,$0e,$04,$20,$0d,$0f,$12,$05,$20,$03,$08,$01,$0c,$0c,$05,$0e,$07,$09,$0e,$07,$20,$21,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
-        .byte    $78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78,$78
-        .byte    $20,$6d,$20,$6e,$20,$6f,$20,$70,$20,$71,$20,$72,$20,$20,$7d,$7e,$7f,$20,$20,$20,$20,$20,$20,$20,$20,$51,$20,$20,$49,$4a,$4b,$4a,$4c,$4a,$4d,$20,$50,$4e,$4f,$20
+*=$4800 "screen data"
+.import binary "play_screen_data.bin",2
 
 //color data
-*=$4c00 
-        .byte    $01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$0a,$0a,$0a,$0a,$0a,$0a,$0a,$0d,$0d,$0d,$0d,$0d,$00,$0e,$0e,$0e,$0e,$0e,$0e,$0e,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
-        .byte    $0a,$0a,$0a,$0a,$0a,$0a,$0a,$0a,$00,$05,$05,$05,$05,$01,$01,$05,$05,$05,$05,$01,$01,$05,$05,$05,$05,$01,$01,$00,$00,$00,$00,$00,$0e,$0e,$0e,$0e,$0e,$0e,$0e,$0e
-        .byte    $05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05
-        .byte    $05,$00,$05,$00,$00,$00,$00,$00,$05,$05,$05,$05,$05,$05,$05,$00,$00,$00,$00,$05,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$00,$00,$05
-        .byte    $05,$00,$05,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$05,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$00,$00,$05
-        .byte    $05,$00,$05,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$00,$00,$05,$00,$00,$05
-        .byte    $05,$00,$05,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$05,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$00,$00,$05
-        .byte    $05,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$05
-        .byte    $0f,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$05,$00,$00,$0f
-        .byte    $00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00
-        .byte    $00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
-        .byte    $01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$0f
-        .byte    $00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$0f
-        .byte    $00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$00,$00
-        .byte    $00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
-        .byte    $01,$01,$01,$01,$01,$01,$01,$01,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$01,$01,$01,$00,$00,$00,$00
-        .byte    $00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$0f
-        .byte    $00,$00,$00,$00,$00,$01,$01,$01,$01,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$01,$01,$01,$01,$01,$01,$01,$01
-        .byte    $01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00
-        .byte    $05,$00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$00,$05
-        .byte    $05,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$00,$05
-        .byte    $05,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$00,$00,$05
-        .byte    $05,$05,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$05,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05
-        .byte    $05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05,$05
-        .byte    $05,$01,$05,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
+*=$4c00 "screen color data"
+.import binary "play_screen_color.bin",2
 
-*=$6000                          // bitmap koala image
+*=$6000 "bitmap koala image"
 .import binary "pongy61.prg",2
